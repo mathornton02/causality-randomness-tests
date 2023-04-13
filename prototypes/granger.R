@@ -29,3 +29,5 @@
 #     data then the test should reject the null hypothesis that the data are 
 #     a truly random bit string. 
 
+# First in this script I will create an example run
+X <- rbinom(10000,1,0.5)
