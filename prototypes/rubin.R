@@ -39,12 +39,12 @@ splitstring <- function(string,splitsize){
     return(split_vector)
 }
 
-Xsubs <- splitstring(X,100)
+Xsubs <- splitstring(X,50)
 
 # deteremine propensity matching model for covariate bits 
 require(rlist)
 list.rbind(Xsubs) -> Xmat
-treatmentbits <- 20
+treatmentbits <- 10
 Xmat[,1:(ncol(Xmat)-treatmentbits)] -> Xmat_prop
 Xmat_prop <- data.frame(Xmat_prop)
 colnames(Xmat_prop) <- paste("X", 1:ncol(Xmat_prop), sep = "")
@@ -67,10 +67,28 @@ for (i in 1:nrow(propensity_scores_treated)){
 
 kmm <- propensity_distances
 colnames(kmm) <- propensity_scores_control[,1]
+rownames(kmm) <- propensity_scores_treated[,1]
+matches <- data.frame(treated = NULL, control = NULL)
 for (i in 1:nrow(propensity_distances)){
-    if (ncol(kmm) == 0){
+    if (is.vector(kmm)){
+        propensity_scores_control[unlist(apply(propensity_distances, 2, function(x) {
+            sum(x==kmm)
+        })) == nrow(propensity_distances),1] -> matchid
+        rowid <- names(kmm)[length(kmm)]
+        matches <- rbind(matches, data.frame(treated=rowid,control=matchid))
+        kmm <- NULL
         break
     } else {
-        which.min(kmm[,i])
+        rowid <- rownames(kmm)[i]
+        matchid <- colnames(kmm)[which.min(kmm[i,])]
+        matches <- rbind(matches, data.frame(treated=rowid,control=matchid))
+        kmm <- kmm[,-which.min(kmm[i,])]
     }
+}
+
+# For each pair of matched treated and untreated compute the treatment effects 
+#  and determine how many of them are statistically significant. 
+for (i in 1:nrow(matches)){
+    treatmatch <- matches[i,1]
+    contrmatch <- matches[i,2]
 }
