@@ -39,13 +39,13 @@ splitstring <- function(string,splitsize){
     return(split_vector)
 }
 
-Xsubs <- splitstring(X,50)
+Xsubs <- splitstring(X,500)
 
 # deteremine propensity matching model for covariate bits 
 require(rlist)
 list.rbind(Xsubs) -> Xmat
-treatmentbits <- 10
-Xmat[,1:(ncol(Xmat)-treatmentbits)] -> Xmat_prop
+effectbits <- 100
+Xmat[,1:(ncol(Xmat)-effectbits)] -> Xmat_prop
 Xmat_prop <- data.frame(Xmat_prop)
 colnames(Xmat_prop) <- paste("X", 1:ncol(Xmat_prop), sep = "")
 propensity_match_model <- glm(X1~.,data=Xmat_prop,family=binomial(link="logit"))
@@ -88,7 +88,23 @@ for (i in 1:nrow(propensity_distances)){
 
 # For each pair of matched treated and untreated compute the treatment effects 
 #  and determine how many of them are statistically significant. 
+distlist <- data.frame(ncol = effectbits)
 for (i in 1:nrow(matches)){
     treatmatch <- matches[i,1]
     contrmatch <- matches[i,2]
+    Xmat[c(treatmatch,contrmatch),(ncol(Xmat)-effectbits + 1):ncol(Xmat)] -> Xmat_prop
+    if (i == 1){
+        distlist <- Xmat_prop[1,] - Xmat_prop[2,]
+        next
+    }
+    distlist <- rbind(distlist,(Xmat_prop[1,] - Xmat_prop[2,]))
 }
+
+apply(distlist,2, function(x) {
+    t.test(x)$p.value
+}) -> pvalueList
+
+
+ks.test(pvalueList, "punif", min(pvalueList), mac(pvalueList))
+require(spgs)
+chisq.unif.test(pvalueList, bins = 5)
