@@ -27,7 +27,12 @@
 
 # First in this script I will create an example run
 X <- rbinom(100000,1,0.5)
-
+Xcorrelated <- rbinom(10,1,0.5)
+weights <- rnorm(10)
+for (i in 1:99990){
+    Xcorrelated <- c(Xcorrelated, rbinom(1,1,(1/(1+exp(-sum(Xcorrelated[i:(i+9)]*weights))))))
+}
+X <- Xcorrelated
 splitstring <- function(string,splitsize){
     # The splitsize should be less than or equal to half the string length 
     #  so that there are at least two causal relationships investigated. 
@@ -104,7 +109,7 @@ apply(distlist,2, function(x) {
     t.test(x)$p.value
 }) -> pvalueList
 
-
-ks.test(pvalueList, "punif", min(pvalueList), mac(pvalueList))
+hist(pvalueList)
+ks.test(pvalueList, "punif", min(pvalueList), max(pvalueList))
 require(spgs)
 chisq.unif.test(pvalueList, bins = 5)
